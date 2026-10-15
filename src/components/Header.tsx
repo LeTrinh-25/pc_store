@@ -1,0 +1,45 @@
+"use client";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useCart } from "./Cart";
+export default function Header() {
+  const [user, setUser] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const path = usePathname(); const router = useRouter(); const { count } = useCart();
+  useEffect(() => { fetch("/api/auth/me").then((r) => r.json()).then((d) => setUser(d.user)); setOpen(false); }, [path]);
+  const logout = async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); router.push("/"); router.refresh(); };
+  return (
+    <header className="bg-black text-white sticky top-0 z-40">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+        <Link href="/" className="text-xl font-extrabold tracking-tight">PC<span className="text-blue-500">STORE</span></Link>
+        <form onSubmit={(e) => { e.preventDefault(); router.push(`/products?q=${encodeURIComponent(q)}`); }} className="hidden md:flex flex-1 max-w-md">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm sản phẩm..." className="w-full rounded-l-lg px-3 py-2 text-black text-sm outline-none" />
+          <button className="bg-blue-600 px-4 rounded-r-lg text-sm font-semibold">Tìm</button>
+        </form>
+        <nav className="hidden md:flex items-center gap-5 ml-auto text-sm">
+          <Link href="/products" className="hover:text-blue-400">Sản phẩm</Link>
+          {user?.role === "ADMIN" && <Link href="/admin" className="hover:text-blue-400">Admin</Link>}
+          {user ? (<>
+            <Link href="/orders" className="hover:text-blue-400">Đơn hàng</Link>
+            <span className="text-gray-400">Xin chào, {user.name}</span>
+            <button onClick={logout} className="hover:text-blue-400">Đăng xuất</button>
+          </>) : (<>
+            <Link href="/login" className="hover:text-blue-400">Đăng nhập</Link>
+            <Link href="/register" className="bg-blue-600 px-3 py-1.5 rounded-lg font-semibold">Đăng ký</Link>
+          </>)}
+        </nav>
+        <Link href="/cart" className="relative ml-auto md:ml-0 p-2">🛒{count > 0 && <span className="absolute -top-0.5 -right-1 bg-blue-600 text-xs rounded-full px-1.5">{count}</span>}</Link>
+        <button className="md:hidden text-2xl" onClick={() => setOpen(!open)}>☰</button>
+      </div>
+      {open && (
+        <div className="md:hidden border-t border-gray-800 px-4 py-3 flex flex-col gap-3 text-sm">
+          <Link href="/products">Sản phẩm</Link>
+          {user?.role === "ADMIN" && <Link href="/admin">Admin</Link>}
+          {user ? (<><Link href="/orders">Đơn hàng của tôi</Link><button onClick={logout} className="text-left">Đăng xuất ({user.name})</button></>) : (<><Link href="/login">Đăng nhập</Link><Link href="/register">Đăng ký</Link></>)}
+        </div>
+      )}
+    </header>
+  );
+}
