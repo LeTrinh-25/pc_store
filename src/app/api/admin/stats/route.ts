@@ -1,16 +1,18 @@
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 export async function GET() {
   if ((await getUser())?.role !== "ADMIN") return Response.json({ error: "Không có quyền" }, { status: 403 });
-  const since = new Date(Date.now() - 6 * 86400000); since.setHours(0, 0, 0, 0);
-  const [orders, customers, products, low, recent] = await Promise.all([
-    prisma.order.findMany({ where: { status: { not: "CANCELLED" } }, select: { total: true } }),
-    prisma.user.count({ where: { role: "USER" } }), prisma.product.count(),
+  const now = new Date(); const start = new Date(now); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - 6);
+  const [delivered, orderCount, customers, products, low, recent, latestOrders] = await Promise.all([
+    prisma.order.aggregate({ where: { status: "DELIVERED" }, _sum: { total: true } }),
+    prisma.order.count(), prisma.user.count({ where: { role: "USER" } }), prisma.product.count(),
     prisma.product.findMany({ where: { stock: { lte: 5 } }, select: { id: true, name: true, stock: true }, orderBy: { stock: "asc" }, take: 8 }),
-    prisma.order.findMany({ where: { status: { not: "CANCELLED" }, createdAt: { gte: since } }, select: { total: true, createdAt: true } }),
+    prisma.order.findMany({ where: { status: "DELIVERED", createdAt: { gte: start } }, select: { total: true, createdAt: true } }),
+    prisma.order.findMany({ include: { items: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 6 }),
   ]);
-  const days: { date: string; revenue: number }[] = [];
-  for (let i = 6; i >= 0; i--) { const d = new Date(Date.now() - i * 86400000); days.push({ date: d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }), revenue: 0 }); }
-  recent.forEach((o) => { const k = o.createdAt.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }); const d = days.find((x) => x.date === k); if (d) d.revenue += o.total; });
-  return Response.json({ revenue: orders.reduce((s, o) => s + o.total, 0), orders: orders.length, customers, products, low, days });
+  const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return { key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`, date: date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }), revenue: 0 }; });
+  recent.forEach((order) => { const key = `${order.createdAt.getFullYear()}-${order.createdAt.getMonth()}-${order.createdAt.getDate()}`; const day = days.find((item) => item.key === key); if (day) day.revenue += order.total; });
+  return Response.json({ revenue: delivered._sum.total || 0, orders: orderCount, customers, products, low, days: days.map(({ key, ...day }) => day), latestOrders });
 }

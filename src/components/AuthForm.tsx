@@ -10,7 +10,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
     e.preventDefault(); setErr("");
     const r = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
     const d = await r.json(); if (!r.ok) return setErr(d.error);
-    router.push("/"); router.refresh();
+    router.push(mode === "login" && d.role === "ADMIN" ? "/admin" : "/"); router.refresh();
   };
   return (
     <form onSubmit={submit} className="max-w-sm mx-auto mt-12 card p-8 space-y-4">
