@@ -19,6 +19,7 @@ export default function Header() {
           <button className="bg-blue-600 px-4 rounded-r-lg text-sm font-semibold">Tìm</button>
         </form>
         <nav className="hidden md:flex items-center gap-5 ml-auto text-sm">
+          <Link href="/" className="hover:text-blue-400">Trang chủ</Link>
           <Link href="/products" className="hover:text-blue-400">Sản phẩm</Link>
           {user?.role === "ADMIN" && <Link href="/admin" className="hover:text-blue-400">Admin</Link>}
           {user ? (<>
@@ -31,10 +32,28 @@ export default function Header() {
           </>)}
         </nav>
         <Link href="/cart" className="relative ml-auto md:ml-0 p-2">🛒{count > 0 && <span className="absolute -top-0.5 -right-1 bg-blue-600 text-xs rounded-full px-1.5">{count}</span>}</Link>
-        <button className="md:hidden text-2xl" onClick={() => setOpen(!open)}>☰</button>
+        <button
+          className="md:hidden text-2xl"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? "Đóng menu" : "Mở menu"}
+          aria-expanded={open}
+        >
+          ☰
+        </button>
       </div>
       {open && (
         <div className="md:hidden border-t border-gray-800 px-4 py-3 flex flex-col gap-3 text-sm">
+          <form onSubmit={(e) => { e.preventDefault(); router.push(`/products?q=${encodeURIComponent(q)}`); setOpen(false); }} className="flex">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm sản phẩm..."
+              aria-label="Tìm sản phẩm"
+              className="w-full rounded-l-lg px-3 py-2 text-black outline-none"
+            />
+            <button className="bg-blue-600 px-4 rounded-r-lg font-semibold">Tìm</button>
+          </form>
+          <Link href="/" className="hover:text-blue-400">Trang chủ</Link>
           <Link href="/products">Sản phẩm</Link>
           {user?.role === "ADMIN" && <Link href="/admin">Admin</Link>}
           {user ? (<><Link href="/orders">Đơn hàng của tôi</Link><button onClick={logout} className="text-left">Đăng xuất ({user.name})</button></>) : (<><Link href="/login">Đăng nhập</Link><Link href="/register">Đăng ký</Link></>)}
