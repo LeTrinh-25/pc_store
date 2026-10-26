@@ -1,28 +1,42 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { vnd } from "@/lib/utils";
-import AddToCart from "@/components/AddToCart";
+import ProductPurchase from "@/components/ProductPurchase";
+import ProductDetailTabs from "@/components/ProductDetailTabs";
+import ProductCard from "@/components/ProductCard";
+import { getProductDetails, getProductVariants } from "@/lib/product-detail-content";
+import { getMockStoreProducts } from "@/lib/mock-catalog";
 export const dynamic = "force-dynamic";
-export default async function Detail({ params }: { params: { id: string } }) {
-  const p = await prisma.product.findUnique({ where: { id: +params.id || 0 }, include: { category: true } });
-  if (!p) notFound();
-  const specs = Object.entries((p.specs as Record<string, string>) || {});
+export default async function Detail({ params, searchParams }: { params: { id: string }; searchParams?: { mock?: string } }) {
+  let p: any = null;
+  let related: any[] = [];
+  let optionData: any[] = [];
+  let productDetails: { warranty: string; origin: string } = { warranty: "", origin: "" };
+  try {
+    if (searchParams?.mock === "1") throw new Error("Use mock catalog");
+    const databaseProduct = await prisma.product.findUnique({ where: { id: +params.id || 0 }, include: { category: true } });
+    if (databaseProduct) {
+      const databaseRelated = await prisma.product.findMany({ where: { categoryId: databaseProduct.categoryId, id: { not: databaseProduct.id } }, include: { category: true }, take: 4, orderBy: { createdAt: "desc" } });
+      p = databaseProduct;
+      related = databaseRelated;
+      optionData = getProductVariants(databaseProduct, databaseProduct.category.name);
+      productDetails = getProductDetails(databaseProduct.category.name);
+    }
+  } catch { /* Use the local catalog demo when the database is unavailable. */ }
+  if (!p) {
+    p = getMockStoreProducts().find((product) => product.id === Number(params.id));
+    if (!p) notFound();
+    related = getMockStoreProducts().filter((product) => product.categoryId === p.categoryId && product.id !== p.id).slice(0, 4);
+    optionData = p.variants;
+    productDetails = { warranty: p.warranty, origin: p.origin };
+  }
+  const specs = Object.entries((p.specs as Record<string, string>) || {}) as [string, string][];
   return (
     <div className="max-w-6xl mx-auto px-4 mt-8">
-      <p className="text-sm text-gray-500 mb-4"><Link href="/" className="hover:text-blue-600">Trang chủ</Link> / <Link href={`/products?category=${p.categoryId}`} className="hover:text-blue-600">{p.category.name}</Link> / {p.name}</p>
-      <div className="grid md:grid-cols-2 gap-8">
-        <img src={p.image} alt={p.name} className="w-full rounded-xl border bg-gray-900" />
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold">{p.name}</h1>
-          <div className="text-3xl font-extrabold text-blue-600">{vnd(p.price)}</div>
-          <p className="text-gray-600">{p.description}</p>
-          <p className="text-sm">{p.stock > 0 ? <span className="text-green-600 font-medium">Còn hàng ({p.stock})</span> : <span className="text-red-600 font-medium">Hết hàng</span>}</p>
-          <AddToCart p={{ id: p.id, name: p.name, price: p.price, image: p.image, stock: p.stock }} />
-        </div>
-      </div>
-      <h2 className="text-xl font-bold mt-10 mb-3">Thông số kỹ thuật</h2>
-      <div className="card overflow-hidden"><table className="w-full text-sm"><tbody>{specs.map(([k, v], i) => <tr key={k} className={i % 2 ? "bg-gray-50" : ""}><td className="px-4 py-3 font-medium w-1/3">{k}</td><td className="px-4 py-3">{v}</td></tr>)}</tbody></table></div>
+      <p className="text-sm text-gray-500 mb-4"><Link href="/" className="hover:text-blue-600">Trang chá»§</Link> / <Link href={`/products?category=${p.categoryId}`} className="hover:text-blue-600">{p.category.name}</Link> / {p.name}</p>
+      <ProductPurchase product={{ id: p.id, name: p.name, price: p.price, image: p.image, stock: p.stock, description: p.description }} variants={optionData} details={productDetails} />
+      <ProductDetailTabs description={p.description} specs={specs} productId={p.id} productName={p.name} />
+      {related.length > 0 && <section className="pt-12"><h2 className="mb-5 text-2xl font-extrabold text-gray-900">Sản phẩm liên quan</h2><div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{related.map((item) => <ProductCard key={item.id} p={{ ...item, category: item.category.name }} />)}</div></section>}
     </div>
   );
 }

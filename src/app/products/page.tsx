@@ -1,27 +1,29 @@
-import { prisma } from "@/lib/db";
+﻿import { prisma } from "@/lib/db";
 import ProductCard from "@/components/ProductCard";
+import ProductFilters from "@/components/ProductFilters";
+import { getDiscountedMockProducts, getMockStoreProducts, mockCategories } from "@/lib/mock-catalog";
 export const dynamic = "force-dynamic";
-export default async function Products({ searchParams: s }: { searchParams: Record<string, string | undefined> }) {
-  const where: any = {};
-  if (s.q) where.name = { contains: s.q, mode: "insensitive" };
-  if (s.category) where.categoryId = +s.category;
-  if (s.min || s.max) where.price = { ...(s.min ? { gte: +s.min } : {}), ...(s.max ? { lte: +s.max } : {}) };
-  const orderBy: any = s.sort === "asc" ? { price: "asc" } : s.sort === "desc" ? { price: "desc" } : { createdAt: "desc" };
-  const [cats, list] = await Promise.all([prisma.category.findMany(), prisma.product.findMany({ where, orderBy, include: { category: true } })]);
-  return (
-    <div className="max-w-6xl mx-auto px-4 mt-8 grid md:grid-cols-[250px_1fr] gap-6">
-      <form className="card p-4 h-fit space-y-3">
-        <h3 className="font-bold">Tìm kiếm &amp; lọc</h3>
-        <input name="q" defaultValue={s.q} placeholder="Từ khóa..." className="inp" />
-        <select name="category" defaultValue={s.category || ""} className="inp"><option value="">Tất cả danh mục</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-        <div className="flex gap-2"><input name="min" type="number" min="0" defaultValue={s.min} placeholder="Giá từ" className="inp" /><input name="max" type="number" min="0" defaultValue={s.max} placeholder="Đến" className="inp" /></div>
-        <select name="sort" defaultValue={s.sort || ""} className="inp"><option value="">Mới nhất</option><option value="asc">Giá tăng dần</option><option value="desc">Giá giảm dần</option></select>
-        <button className="btn w-full">Áp dụng</button><a href="/products" className="btn-o w-full">Xóa bộ lọc</a>
-      </form>
-      <div>
-        <p className="text-sm text-gray-500 mb-3">{list.length} sản phẩm</p>
-        {list.length ? <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{list.map((p) => <ProductCard key={p.id} p={{ ...p, category: p.category.name }} />)}</div> : <div className="card p-10 text-center text-gray-500">Không tìm thấy sản phẩm phù hợp.</div>}
-      </div>
-    </div>
-  );
+const brandList=["Intel","AMD","NVIDIA","ASUS","MSI","Corsair","Kingston","Samsung","WD","Gigabyte","LG","Logitech","Razer","Keychron","Akko","HyperX","SteelSeries"];
+const sizes=["13.3 inch","14 inch","15.6 inch","16 inch","17.3 inch"];
+export default async function Products({searchParams:s}:{searchParams:Record<string,string|undefined>}){
+ let categories: {id:number;name:string}[]; let all: any[];
+ if (s.promotion === "1") { categories=mockCategories; all=getDiscountedMockProducts(); }
+ else try { [categories,all]=await Promise.all([prisma.category.findMany({orderBy:{name:"asc"}}),prisma.product.findMany({include:{category:true},orderBy:{createdAt:"desc"}})]); }
+ catch { categories=mockCategories; all=getMockStoreProducts(); }
+ const maxPrice=Math.ceil(Math.max(100000,...all.map(p=>p.price))/100000)*100000;
+ const brands=brandList.filter(b=>all.some(p=>p.name.toLowerCase().includes(b.toLowerCase())));
+ const sockets=Array.from(new Set(all.flatMap(p=>Object.entries((p.specs as Record<string,string>)||{}).filter(([k])=>k.toLowerCase().includes("socket")).map(([,v])=>String(v)))));
+ let list=all;
+ if(s.q)list=list.filter(p=>p.name.toLowerCase().includes(s.q!.toLowerCase()));
+ if(s.category)list=list.filter(p=>p.categoryId===Number(s.category));
+ if(s.min)list=list.filter(p=>p.price>=Number(s.min));
+ if(s.max)list=list.filter(p=>p.price<=Number(s.max));
+ if(s.brand)list=list.filter(p=>p.name.toLowerCase().includes(s.brand!.toLowerCase()));
+ if(s.size)list=list.filter(p=>JSON.stringify(p.specs).toLowerCase().includes(s.size!.toLowerCase()));
+ if(s.socket)list=list.filter(p=>JSON.stringify(p.specs).toLowerCase().includes(s.socket!.toLowerCase()));
+ if(s.sort==="asc")list=[...list].sort((a,b)=>a.price-b.price);else if(s.sort==="desc")list=[...list].sort((a,b)=>b.price-a.price);
+ return <div className="mx-auto mt-8 grid max-w-6xl gap-6 px-4 md:grid-cols-[250px_1fr]">
+  <ProductFilters categories={categories} brands={brands} sizes={sizes} sockets={sockets} maxPrice={maxPrice} values={s}/>
+  <div><p className="mb-3 text-sm text-gray-500">{list.length} sản phẩm</p>{list.length?<div className="grid grid-cols-2 gap-4 lg:grid-cols-3">{list.map(p=><ProductCard key={p.id} p={{...p,category:p.category.name}}/>)}</div>:<div className="card p-10 text-center text-gray-500">Không tìm thấy sản phẩm phù hợp.</div>}</div>
+ </div>;
 }

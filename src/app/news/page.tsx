@@ -1,0 +1,17 @@
+import Link from "next/link";
+import { newsArticles, newsCategories } from "@/lib/news-data";
+import NewsSidebar from "@/components/NewsSidebar";
+
+export default function News({ searchParams }: { searchParams: { category?: string } }) {
+  const selected = searchParams.category;
+  const articles = selected ? newsArticles.filter((item) => item.category === selected) : newsArticles;
+  const featured = articles[0];
+  return <main className="mx-auto max-w-6xl px-4 pt-9">
+    <header className="mb-8 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-orange-950 px-6 py-10 text-white sm:px-10"><p className="text-xs font-bold uppercase tracking-[.2em] text-orange-300">Góc công nghệ PCSTORE</p><h1 className="mt-3 text-3xl font-black sm:text-4xl">Tin tức & cẩm nang</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-gray-300">Kiến thức linh kiện, hướng dẫn chọn mua và mẹo sử dụng máy tính.</p></header>
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]"><div className="min-w-0">
+      <nav className="mb-6 flex gap-2 overflow-x-auto pb-2"><Link href="/news" className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${!selected ? "bg-slate-900 text-white" : "border bg-white text-gray-700"}`}>Tất cả</Link>{newsCategories.map((category) => <Link key={category} href={`/news?category=${encodeURIComponent(category)}`} className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${selected === category ? "bg-slate-900 text-white" : "border bg-white text-gray-700"}`}>{category}</Link>)}</nav>
+      {featured && <Link href={`/news/${featured.slug}`} className="group mb-10 grid overflow-hidden rounded-3xl border bg-white md:grid-cols-2"><img src={featured.image} alt="" className="aspect-[16/9] h-full w-full object-cover"/><div className="p-6 sm:p-9"><p className="text-xs font-bold uppercase tracking-widest text-orange-600">{featured.category} · {featured.date}</p><h2 className="mt-3 text-2xl font-extrabold leading-tight group-hover:text-orange-700 sm:text-3xl">{featured.title}</h2><p className="mt-3 text-sm leading-6 text-gray-600">{featured.excerpt}</p><span className="mt-5 inline-block font-bold text-orange-700">Đọc bài viết →</span></div></Link>}
+      <section className="pb-14"><div className="mb-5 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-widest text-orange-600">Cập nhật mới</p><h2 className="mt-1 text-2xl font-extrabold">{selected || "Bài viết mới nhất"}</h2></div><span className="text-sm text-gray-500">{articles.length} bài viết</span></div><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{articles.filter((item) => item.slug !== featured?.slug).map((item) => <Link key={item.slug} href={`/news/${item.slug}`} className="group overflow-hidden rounded-2xl border bg-white"><img src={item.image} alt="" className="aspect-[16/10] w-full object-cover"/><div className="p-5"><p className="text-xs font-bold uppercase text-orange-600">{item.category} · {item.date}</p><h3 className="mt-2 text-lg font-bold group-hover:text-orange-700">{item.title}</h3><p className="mt-2 line-clamp-3 text-sm leading-6 text-gray-600">{item.excerpt}</p><span className="mt-4 inline-block text-sm font-semibold text-orange-700">Đọc tiếp →</span></div></Link>)}</div>{!articles.length && <div className="card p-10 text-center text-gray-500">Chưa có bài viết trong danh mục này.</div>}</section>
+    </div><NewsSidebar activeCategory={selected}/></div>
+  </main>;
+}
