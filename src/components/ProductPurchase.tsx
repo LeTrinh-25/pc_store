@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import Image from "next/image";
+import ProductImage from "@/components/ProductImage";
 import AddToCart from "@/components/AddToCart";
 import ProductRatingInline from "@/components/ProductRating";
 import { vnd } from "@/lib/utils";
@@ -15,7 +15,7 @@ export default function ProductPurchase({ product, variants, details }: {
 }) {
   const initialIndex = Math.max(0, variants.findIndex((item) => item.stock > 0));
   const [index, setIndex] = useState(initialIndex);
-  const gallery = product.images?.length ? product.images : [product.image];
+  const gallery = Array.from(new Set([product.image, ...(product.images || [])].filter((image): image is string => Boolean(image?.trim()))));
   const [selectedImage, setSelectedImage] = useState(gallery[0]);
   const variant = variants[index];
   const colors = useMemo(() => Array.from(new Map(variants.map((item) => [item.color, item])).values()), [variants]);
@@ -34,8 +34,8 @@ export default function ProductPurchase({ product, variants, details }: {
 
   return <div className="grid gap-7 md:grid-cols-2">
     <div className="self-start overflow-hidden rounded-2xl border bg-white">
-      <div className="group relative aspect-square w-full overflow-hidden bg-gray-50"><Image src={selectedImage || variant?.image || product.image} alt={`${product.name}${selectedLabel ? ` - ${selectedLabel}` : ""}`} fill priority sizes="(max-width: 768px) 100vw, 50vw" className="object-contain transition-transform duration-300 group-hover:scale-125" /></div>
-      {gallery.length > 1 && <div className="flex gap-2 overflow-x-auto border-t bg-white p-3">{gallery.map((image, imageIndex) => <button key={`${image}-${imageIndex}`} type="button" onClick={() => setSelectedImage(image)} aria-label={`Xem ảnh ${imageIndex + 1}`} aria-pressed={selectedImage === image} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border ${selectedImage === image ? "border-blue-600 ring-1 ring-blue-600" : "border-gray-200"}`}><Image src={image} alt="" fill sizes="64px" className="object-contain p-1" /></button>)}</div>}
+      <div className="group relative aspect-square w-full overflow-hidden bg-gray-50"><ProductImage src={selectedImage || variant?.image || product.image} alt={`${product.name}${selectedLabel ? ` - ${selectedLabel}` : ""}`} fill priority sizes="(max-width: 768px) 100vw, 50vw" className="object-contain transition-transform duration-300 group-hover:scale-125" /></div>
+      {gallery.length > 1 && <div className="flex gap-2 overflow-x-auto border-t bg-white p-3">{gallery.map((image, imageIndex) => <button key={`${image}-${imageIndex}`} type="button" onClick={() => setSelectedImage(image)} aria-label={`Xem ảnh ${imageIndex + 1}`} aria-pressed={selectedImage === image} className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border ${selectedImage === image ? "border-blue-600 ring-1 ring-blue-600" : "border-gray-200"}`}><ProductImage src={image} alt="" fill sizes="64px" className="object-contain p-1" /></button>)}</div>}
       {variant && <p className="border-t bg-white px-4 py-2 text-center text-xs text-gray-500">&#7842;nh phi&#234;n b&#7843;n {variant.color}</p>}
     </div>
     <div className="space-y-4">

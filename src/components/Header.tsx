@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import ProductImage from "@/components/ProductImage";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -36,7 +36,7 @@ export default function Header() {
         <form onSubmit={search} className="relative hidden min-w-40 flex-1 md:flex">
           <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Bạn cần tìm sản phẩm nào?" aria-label="Tìm sản phẩm" className="w-full rounded-l-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
           <button className="rounded-r-xl bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700">Tìm</button>
-          {suggestions.length > 0 && <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl">{suggestions.map((product) => <Link key={product.id} href={`/products/${product.id}?mock=1`} onClick={() => setQ("")} className="flex items-center gap-3 rounded-lg p-2 hover:bg-blue-50"><Image src={product.image} alt="" width={48} height={48} className="h-12 w-12 rounded-md bg-gray-50 object-contain"/><span className="min-w-0 flex-1"><span className="line-clamp-2 block text-xs font-semibold">{product.name}</span><b className="text-xs text-rose-600">{vnd(product.price)}</b></span></Link>)}</div>}
+          {suggestions.length > 0 && <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl">{suggestions.map((product) => <Link key={product.id} href={`/products/${product.id}?mock=1`} onClick={() => setQ("")} className="flex items-center gap-3 rounded-lg p-2 hover:bg-blue-50"><ProductImage src={product.image} alt="" width={48} height={48} className="h-12 w-12 rounded-md bg-gray-50 object-contain"/><span className="min-w-0 flex-1"><span className="line-clamp-2 block text-xs font-semibold">{product.name}</span><b className="text-xs text-rose-600">{vnd(product.price)}</b></span></Link>)}</div>}
         </form>
         <nav className="ml-auto hidden items-center gap-4 text-sm md:flex">
           <Link href="/news" className="hover:text-blue-700">Tin công nghệ</Link>
@@ -47,7 +47,7 @@ export default function Header() {
         <div className="group relative ml-auto md:ml-0">
           <Link href="/cart" aria-label={`Giỏ hàng, ${count} sản phẩm`} className="relative block rounded-lg p-2 text-xl hover:bg-blue-50">🛒{count > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-orange-500 px-1.5 text-xs text-white">{count}</span>}</Link>
           <div className="invisible absolute right-0 top-full z-50 w-80 rounded-xl border border-gray-200 bg-white p-4 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-            <p className="font-bold">Giỏ hàng ({count})</p><div className="mt-3 max-h-64 space-y-3 overflow-auto">{items.length ? items.slice(0, 5).map((item: any) => <div key={item.id} className="flex gap-3 text-sm"><Image src={item.image} alt="" width={48} height={48} className="h-12 w-12 rounded-lg bg-gray-50 object-contain"/><span className="min-w-0 flex-1"><span className="line-clamp-2 block">{item.name}</span><span className="text-xs text-gray-500">Số lượng: {item.qty}</span></span><b className="shrink-0 text-rose-600">{vnd(item.price * item.qty)}</b></div>) : <p className="py-4 text-center text-sm text-gray-500">Giỏ hàng đang trống.</p>}</div>
+            <p className="font-bold">Giỏ hàng ({count})</p><div className="mt-3 max-h-64 space-y-3 overflow-auto">{items.length ? items.slice(0, 5).map((item: any) => <div key={item.id} className="flex gap-3 text-sm"><ProductImage src={item.image} alt="" width={48} height={48} className="h-12 w-12 rounded-lg bg-gray-50 object-contain"/><span className="min-w-0 flex-1"><span className="line-clamp-2 block">{item.name}</span><span className="text-xs text-gray-500">Số lượng: {item.qty}</span></span><b className="shrink-0 text-rose-600">{vnd(item.price * item.qty)}</b></div>) : <p className="py-4 text-center text-sm text-gray-500">Giỏ hàng đang trống.</p>}</div>
             {items.length > 0 && <><p className="mt-3 border-t pt-3 text-right text-sm">Tạm tính: <b className="text-rose-600">{vnd(total)}</b></p><Link href="/cart" className="btn mt-3 w-full">Xem giỏ hàng</Link></>}
           </div>
         </div>

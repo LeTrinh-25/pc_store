@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useCart } from "@/components/Cart";
+import ProductImage from "@/components/ProductImage";
 import { vnd } from "@/lib/utils";
 export default function Cart() {
   const { items, setQty, remove, total } = useCart();
@@ -11,7 +12,7 @@ export default function Cart() {
         <h1 className="text-2xl font-bold">Giỏ hàng</h1>
         {items.map((i: any) => (
           <div key={i.id} className="card p-3 flex gap-3 items-center">
-            <img src={i.image} alt="" className="w-20 h-16 object-cover rounded bg-gray-900" />
+            <ProductImage src={i.image} alt={i.name} width={80} height={64} className="h-16 w-20 rounded bg-gray-100 object-contain" />
             <div className="flex-1 min-w-0"><Link href={`/products/${i.id}`} className="font-medium hover:text-blue-600 line-clamp-2">{i.name}</Link><div className="text-blue-600 font-semibold">{vnd(i.price)}</div></div>
             <div className="flex items-center border rounded-lg"><button className="px-2.5 py-1" onClick={() => setQty(i.id, i.qty - 1)}>−</button><span className="w-8 text-center">{i.qty}</span><button className="px-2.5 py-1" onClick={() => setQty(i.id, i.qty + 1)}>+</button></div>
             <button onClick={() => remove(i.id)} className="text-red-500 text-sm">Xóa</button>

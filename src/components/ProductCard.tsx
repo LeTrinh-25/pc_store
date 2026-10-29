@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
+import ProductImage from "@/components/ProductImage";
 import { useCart } from "./Cart";
 import { vnd } from "@/lib/utils";
 import ProductRatingInline from "@/components/ProductRating";
@@ -30,7 +30,7 @@ export default function ProductCard({ p }: { p: CardProduct }) {
     <div className="card group flex flex-col overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-xl">
       <Link href={productHref} className="relative block aspect-square overflow-hidden bg-gray-50">
         {!imageLoaded && <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-gray-100" />}
-        <Image src={p.image} alt={p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" onLoad={() => setImageLoaded(true)} className="object-contain p-2 transition duration-300 group-hover:scale-[1.04]" />
+        <ProductImage src={p.image} alt={p.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" onLoad={() => setImageLoaded(true)} className="object-contain p-2 transition duration-300 group-hover:scale-[1.04]" />
         {p.badge && <span className={`absolute left-2 top-2 rounded-md px-2 py-1 text-[10px] font-extrabold text-white shadow-sm ${p.badge === "Hot" ? "bg-rose-600" : p.badge === "Mới" ? "bg-blue-600" : "bg-emerald-600"}`}>{p.badge}</span>}
         {p.discountPercent !== undefined && p.discountPercent > 0 && <span className="absolute right-2 top-2 rounded-md bg-orange-500 px-2 py-1 text-[10px] font-extrabold text-white shadow-sm">-{p.discountPercent}%</span>}
       </Link>
