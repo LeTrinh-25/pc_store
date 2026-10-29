@@ -1,3 +1,5 @@
+import { productImage } from "@/lib/product-images";
+
 export type MockProductVariant = {
   color: string;
   colorHex: string;
@@ -66,12 +68,12 @@ const colorSamples = [
 
 export const mockProducts: MockProduct[] = seeds.map((product) => {
   const slug = product.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const image = `https://placehold.co/600x600/f1f5f9/1e293b/png?text=${encodeURIComponent(product.name)}`;
+  const image = productImage(product.name, product.category);
   const discountPercent = Math.round((1 - product.price / product.oldPrice) * 100);
   const capacities = product.capacities ?? [];
   const variants = colorSamples.flatMap((sample, colorIndex) => (capacities.length ? capacities : [undefined]).map((capacity, capacityIndex) => ({
     ...sample,
-    image: colorIndex === 0 ? image : `https://placehold.co/600x600/f1f5f9/1e293b/png?text=${encodeURIComponent(`${product.name} ${sample.color}`)}`,
+    image,
     price: product.price + (colorIndex + capacityIndex) * Math.max(50000, Math.round(product.price * 0.02)),
     stock: colorIndex === colorSamples.length - 1 ? 0 : Math.max(1, Math.ceil(product.stock / (colorIndex + capacityIndex + 1))),
     capacity,
@@ -97,6 +99,7 @@ export function getDiscountedMockProducts() {
 }
 
 export const promotionBanners = [
-  { title: "Ưu đãi linh kiện PC", subtitle: "Giảm giá nhiều sản phẩm chính hãng", image: "https://placehold.co/1600x500/111827/f97316/png?text=PC+PARTS+SALE", href: "/products?promotion=1" },
-  { title: "Nâng cấp góc máy", subtitle: "Deal tốt cho màn hình và gaming gear", image: "https://placehold.co/1600x500/172554/ffffff/png?text=GAMING+GEAR+DEALS", href: "/products?promotion=1" },
+  { title: "Ưu đãi linh kiện PC", subtitle: "Giảm giá nhiều sản phẩm chính hãng", image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1600&q=85", href: "/products?promotion=1" },
+  { title: "Nâng cấp góc máy", subtitle: "Deal tốt cho màn hình và gaming gear", image: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&w=1600&q=85", href: "/products?promotion=1" },
 ];
+

@@ -6,6 +6,7 @@ export type ProductColorVariant = {
   stock: number;
   capacity?: string;
 };
+import { productImage } from "@/lib/product-images";
 
 const colorChoices = [
   { color: "\u0110en", colorHex: "#202124" },
@@ -30,9 +31,7 @@ export function getProductVariants(product: { name: string; price: number; image
     ...choice,
     capacity,
     price: product.price + colorIndex * priceStep + capacityIndex * priceStep,
-    image: colorIndex === 0
-      ? product.image
-      : `https://placehold.co/600x450/0b1220/f97316/png?text=${encodeURIComponent(`${product.name} ${choice.color}${capacity ? ` ${capacity}` : ""}`)}`,
+    image: product.image || productImage(product.name, category),
     stock: product.stock < 1 || colorIndex === colorChoices.length - 1
       ? 0
       : Math.max(1, Math.ceil(product.stock / (colorIndex + capacityIndex + 1))),

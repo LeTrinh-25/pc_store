@@ -19,8 +19,8 @@ export default async function Detail({ params, searchParams }: { params: { id: s
       const databaseRelated = await prisma.product.findMany({ where: { categoryId: databaseProduct.categoryId, id: { not: databaseProduct.id } }, include: { category: true }, take: 4, orderBy: { createdAt: "desc" } });
       p = databaseProduct;
       related = databaseRelated;
-      optionData = getProductVariants(databaseProduct, databaseProduct.category.name);
-      productDetails = getProductDetails(databaseProduct.category.name);
+      optionData = [];
+      productDetails = { warranty: databaseProduct.warranty || getProductDetails(databaseProduct.category.name).warranty, origin: databaseProduct.origin || "Đang cập nhật" };
     }
   } catch { /* Use the local catalog demo when the database is unavailable. */ }
   if (!p) {
@@ -34,7 +34,7 @@ export default async function Detail({ params, searchParams }: { params: { id: s
   return (
     <div className="max-w-6xl mx-auto px-4 mt-8">
       <p className="text-sm text-gray-500 mb-4"><Link href="/" className="hover:text-blue-600">Trang chá»§</Link> / <Link href={`/products?category=${p.categoryId}`} className="hover:text-blue-600">{p.category.name}</Link> / {p.name}</p>
-      <ProductPurchase product={{ id: p.id, name: p.name, price: p.price, image: p.image, stock: p.stock, description: p.description }} variants={optionData} details={productDetails} />
+      <ProductPurchase product={{ id: p.id, name: p.name, price: p.price, image: p.image, images: p.images, stock: p.stock, description: p.description, brand: p.brand || p.name.split(" ")[0] }} variants={optionData} details={productDetails} />
       <ProductDetailTabs description={p.description} specs={specs} productId={p.id} productName={p.name} />
       {related.length > 0 && <section className="pt-12"><h2 className="mb-5 text-2xl font-extrabold text-gray-900">Sản phẩm liên quan</h2><div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{related.map((item) => <ProductCard key={item.id} p={{ ...item, category: item.category.name }} />)}</div></section>}
     </div>

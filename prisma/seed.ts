@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { mockProducts } from "../src/lib/mock-catalog";
+import { productImage } from "../src/lib/product-images";
 const db = new PrismaClient();
-const img = (t: string) => `https://placehold.co/600x450/0b1220/3b82f6/png?text=${encodeURIComponent(t)}`;
+const img = (t: string, category = "") => productImage(t, category);
 const cats = ["PC Gaming", "PC Văn phòng", "CPU", "Card đồ họa", "RAM", "SSD", "Mainboard"];
 const slug = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 // [tên, danh mục, giá, tồn, nổi bật, mô tả, specs]
@@ -24,14 +26,35 @@ const P: [string, string, number, number, boolean, string, Record<string, string
   ["MSI B760M Mortar WiFi", "Mainboard", 4290000, 16, false, "Mainboard mATX đa dụng.", { Socket: "LGA1700", Chipset: "B760", "Hỗ trợ RAM": "DDR5", "Kích thước": "mATX" }],
 ];
 async function main() {
-  await db.orderItem.deleteMany(); await db.order.deleteMany(); await db.product.deleteMany(); await db.category.deleteMany(); await db.user.deleteMany();
+  if (process.env.RESEED === "1") {
+    await db.review.deleteMany(); await db.post.deleteMany(); await db.orderItem.deleteMany(); await db.order.deleteMany(); await db.product.deleteMany(); await db.category.deleteMany(); await db.user.deleteMany();
+  } else if (await db.product.count()) {
+    console.log("Đã có sản phẩm; giữ nguyên dữ liệu. Đặt RESEED=1 để nạp lại."); return;
+  }
   const admin = await db.user.create({ data: { name: "Quản trị viên", email: "admin@pcstore.vn", password: await bcrypt.hash("admin123", 10), role: "ADMIN" } });
   const user = await db.user.create({ data: { name: "Nguyễn Văn A", email: "user@pcstore.vn", phone: "0901234567", password: await bcrypt.hash("user123", 10) } });
   const cm: Record<string, number> = {};
-  for (const n of cats) cm[n] = (await db.category.create({ data: { name: n, slug: slug(n) } })).id;
+  const allCategories = Array.from(new Set([...cats, ...mockProducts.map((product) => product.category)]));
+  for (const n of allCategories) cm[n] = (await db.category.create({ data: { name: n, slug: slug(n) } })).id;
   const ps = [];
-  for (const [name, c, price, stock, featured, description, specs] of P)
-    ps.push(await db.product.create({ data: { name, price, stock, featured, description, specs, image: img(name), categoryId: cm[c] } }));
+  for (const [name, c, price, stock, featured, description, specs] of P) {
+    const image = img(name, c);
+    ps.push(await db.product.create({ data: { name, price, oldPrice: ps.length % 3 === 0 ? Math.round(price * 1.12) : null, brand: name.split(" ")[0], warranty: "36 tháng chính hãng", origin: "Theo nhà sản xuất", stock, featured, description, specs, image, images: [image], categoryId: cm[c] } }));
+  }
+  for (const product of mockProducts) {
+    const image = img(product.name, product.category);
+    ps.push(await db.product.create({ data: { name: product.name, description: product.description, price: product.price, oldPrice: product.oldPrice > product.price ? product.oldPrice : null, brand: product.brand, warranty: product.warranty, origin: product.origin, image, images: [image], stock: product.stock, featured: product.badge === "Hot", specs: product.specs, categoryId: cm[product.category] } }));
+  }
+  for (const [index, product] of ps.slice(0, 3).entries()) await db.review.create({ data: { productId: product.id, name: ["Minh Anh", "Quốc Bảo", "Thu Hà"][index], rating: 5, content: "Sản phẩm đúng mô tả, đóng gói cẩn thận và cửa hàng tư vấn nhiệt tình." } });
+  const articles = [
+    ["man-hinh-gaming", "Chọn màn hình gaming phù hợp cấu hình", "Hướng dẫn", "Cân đối kích thước, độ phân giải và tần số quét theo PC của bạn.", "Full HD phù hợp màn 24 inch, còn QHD thường cân bằng tốt ở 27 inch. Hãy chọn tần số quét theo hiệu năng card đồ họa và tựa game thường chơi."],
+    ["ve-sinh-pc-an-toan", "Vệ sinh PC an toàn tại nhà", "Kiến thức công nghệ", "Giữ luồng gió thông thoáng và chăm sóc linh kiện đúng cách.", "Tắt máy và ngắt điện trước khi vệ sinh. Dùng chổi mềm hoặc khí nén cho lưới lọc và quạt; không xịt chất lỏng trực tiếp lên linh kiện."],
+    ["chon-cau-hinh-pc", "Cách chọn cấu hình PC theo nhu cầu", "Hướng dẫn", "Bắt đầu từ công việc và ngân sách để chọn cấu hình cân đối.", "Chọn CPU và card đồ họa phù hợp với ứng dụng. Kiểm tra nguồn, bộ nhớ và khả năng nâng cấp trước khi mua."],
+    ["nang-cap-ram", "Những điều cần biết khi nâng cấp RAM", "Linh kiện", "Kiểm tra thế hệ RAM và khả năng hỗ trợ của bo mạch chủ.", "DDR4 và DDR5 không dùng chung khe cắm. Hãy kiểm tra bo mạch chủ và chọn bộ nhớ tương thích."],
+    ["ssd-nvme-sata", "SSD NVMe và SATA khác nhau thế nào?", "Kiến thức công nghệ", "Tìm hiểu giao tiếp lưu trữ trước khi chọn ổ cứng.", "NVMe sử dụng PCIe và thường có tốc độ cao hơn. Hãy kiểm tra máy có khe M.2 tương thích hay không."],
+    ["kiem-tra-linh-kien", "Checklist kiểm tra tương thích linh kiện", "Hướng dẫn", "Đối chiếu socket, kích thước và nguồn điện trước khi lắp máy.", "Kiểm tra socket CPU, chuẩn RAM, kích thước case và công suất nguồn để đảm bảo linh kiện tương thích."],
+  ];
+  for (const [slug, title, category, excerpt, content] of articles) await db.post.create({ data: { slug, title, category, excerpt, content, image: img(title, category) } });
   const st = ["DELIVERED", "DELIVERED", "SHIPPING", "PENDING"] as const;
   for (let i = 0; i < 4; i++) {
     const p = ps[i * 2]; const d = new Date(Date.now() - i * 2 * 86400000);

@@ -11,14 +11,15 @@ export default async function Products({searchParams:s}:{searchParams:Record<str
  else try { [categories,all]=await Promise.all([prisma.category.findMany({orderBy:{name:"asc"}}),prisma.product.findMany({include:{category:true},orderBy:{createdAt:"desc"}})]); }
  catch { categories=mockCategories; all=getMockStoreProducts(); }
  const maxPrice=Math.ceil(Math.max(100000,...all.map(p=>p.price))/100000)*100000;
- const brands=brandList.filter(b=>all.some(p=>p.name.toLowerCase().includes(b.toLowerCase())));
+ const brands=brandList.filter(b=>all.some(p=>(p.brand||p.name).toLowerCase().includes(b.toLowerCase())));
  const sockets=Array.from(new Set(all.flatMap(p=>Object.entries((p.specs as Record<string,string>)||{}).filter(([k])=>k.toLowerCase().includes("socket")).map(([,v])=>String(v)))));
  let list=all;
+ if(s.promotion === "1") list=list.filter(p=>p.oldPrice && p.oldPrice>p.price);
  if(s.q)list=list.filter(p=>p.name.toLowerCase().includes(s.q!.toLowerCase()));
  if(s.category)list=list.filter(p=>p.categoryId===Number(s.category));
  if(s.min)list=list.filter(p=>p.price>=Number(s.min));
  if(s.max)list=list.filter(p=>p.price<=Number(s.max));
- if(s.brand)list=list.filter(p=>p.name.toLowerCase().includes(s.brand!.toLowerCase()));
+ if(s.brand)list=list.filter(p=>(p.brand||p.name).toLowerCase().includes(s.brand!.toLowerCase()));
  if(s.size)list=list.filter(p=>JSON.stringify(p.specs).toLowerCase().includes(s.size!.toLowerCase()));
  if(s.socket)list=list.filter(p=>JSON.stringify(p.specs).toLowerCase().includes(s.socket!.toLowerCase()));
  if(s.sort==="asc")list=[...list].sort((a,b)=>a.price-b.price);else if(s.sort==="desc")list=[...list].sort((a,b)=>b.price-a.price);
