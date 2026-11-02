@@ -11,8 +11,11 @@ export const homeNews = [
  {category:"MẸO HAY",title:"Những điều cần biết trước khi nâng cấp RAM",image:"https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=800&q=80"},
  {category:"TƯ VẤN",title:"SSD NVMe và SATA: chọn loại nào cho máy tính?",image:"https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=800&q=80"},
 ];
+// Ảnh từ Unsplash: https://unsplash.com/
 export const storePhotos = [
- {label:"Không gian tư vấn",image:"https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=900&q=80"},
- {label:"Góc trải nghiệm sản phẩm",image:"https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80"},
- {label:"Sẵn sàng giao đến bạn",image:"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=900&q=80"},
+ {title:"Không gian tư vấn",href:"/about",alt:"Không gian tư vấn và trải nghiệm tại PCSTORE",image:"https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=900&q=80"},
+ {title:"Góc trải nghiệm sản phẩm",href:"/about",alt:"Góc trải nghiệm sản phẩm công nghệ",image:"https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=900&q=80"},
+ {title:"Sẵn sàng giao đến bạn",href:"/about",alt:"Đội ngũ PCSTORE chuẩn bị hỗ trợ khách hàng",image:"https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=900&q=80"},
+ {title:"Khu vực lắp ráp PC",href:"/about",alt:"Khu vực lắp ráp và kiểm tra máy tính",image:"https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=900&q=80"},
+ {title:"Bảo hành & hỗ trợ kỹ thuật",href:"/about",alt:"Kỹ thuật viên hỗ trợ và kiểm tra thiết bị",image:"https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80"},
 ];

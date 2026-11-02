@@ -2,10 +2,58 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { mockProducts } from "../src/lib/mock-catalog";
 import { productImage } from "../src/lib/product-images";
+import { ensureCategorySampleProducts } from "./seed-category-products";
+import { popularBrands } from "../src/lib/brands";
 const db = new PrismaClient();
 const img = (t: string, category = "") => productImage(t, category);
 const cats = ["PC Gaming", "PC Văn phòng", "CPU", "Card đồ họa", "RAM", "SSD", "Mainboard"];
 const slug = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+async function ensurePopularBrandProducts() {
+  for (const brand of popularBrands) {
+    const existing = await db.product.findFirst({
+      where: {
+        OR: [
+          { brand: { contains: brand, mode: "insensitive" } },
+          { name: { contains: brand, mode: "insensitive" } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (existing) continue;
+
+    const sample = mockProducts.find((product) => product.brand.toLocaleLowerCase("vi") === brand.toLocaleLowerCase("vi"));
+    if (!sample) throw new Error(`Không tìm thấy sản phẩm mẫu cho thương hiệu "${brand}".`);
+    const category = await db.category.upsert({
+      where: { name: sample.category },
+      create: { name: sample.category, slug: slug(sample.category) },
+      update: {},
+    });
+    const duplicate = await db.product.findFirst({
+      where: { name: sample.name, categoryId: category.id },
+      select: { id: true },
+    });
+    if (duplicate) continue;
+
+    const image = img(sample.name, sample.category);
+    await db.product.create({
+      data: {
+        name: sample.name,
+        description: sample.description,
+        price: sample.price,
+        oldPrice: sample.oldPrice > sample.price ? sample.oldPrice : null,
+        brand: sample.brand,
+        warranty: sample.warranty,
+        origin: sample.origin,
+        image,
+        images: [image],
+        stock: sample.stock,
+        featured: sample.badge === "Hot",
+        specs: sample.specs,
+        categoryId: category.id,
+      },
+    });
+  }
+}
 // [tên, danh mục, giá, tồn, nổi bật, mô tả, specs]
 const P: [string, string, number, number, boolean, string, Record<string, string>][] = [
   ["PC Gaming Titan i7 RTX 4070", "PC Gaming", 38990000, 8, true, "Cấu hình mạnh mẽ chiến mọi game AAA ở 2K.", { CPU: "Intel Core i7-14700F", VGA: "RTX 4070 12GB", RAM: "32GB DDR5", SSD: "1TB NVMe", PSU: "750W 80+ Gold" }],
@@ -29,7 +77,19 @@ async function main() {
   if (process.env.RESEED === "1") {
     await db.review.deleteMany(); await db.post.deleteMany(); await db.orderItem.deleteMany(); await db.order.deleteMany(); await db.product.deleteMany(); await db.category.deleteMany(); await db.user.deleteMany();
   } else if (await db.product.count()) {
-    console.log("Đã có sản phẩm; giữ nguyên dữ liệu. Đặt RESEED=1 để nạp lại."); return;
+    const cm: Record<string, number> = {};
+    for (const name of cats) {
+      const category = await db.category.upsert({
+        where: { name },
+        create: { name, slug: slug(name) },
+        update: {},
+      });
+      cm[name] = category.id;
+    }
+    await ensureCategorySampleProducts(db, cm);
+    await ensurePopularBrandProducts();
+    console.log("Đã đảm bảo mỗi danh mục có ít nhất 16 sản phẩm còn hàng; dữ liệu hiện có được giữ nguyên.");
+    return;
   }
   const admin = await db.user.create({ data: { name: "Quản trị viên", email: "admin@pcstore.vn", password: await bcrypt.hash("admin123", 10), role: "ADMIN" } });
   const user = await db.user.create({ data: { name: "Nguyễn Văn A", email: "user@pcstore.vn", phone: "0901234567", password: await bcrypt.hash("user123", 10) } });
@@ -45,6 +105,8 @@ async function main() {
     const image = img(product.name, product.category);
     ps.push(await db.product.create({ data: { name: product.name, description: product.description, price: product.price, oldPrice: product.oldPrice > product.price ? product.oldPrice : null, brand: product.brand, warranty: product.warranty, origin: product.origin, image, images: [image], stock: product.stock, featured: product.badge === "Hot", specs: product.specs, categoryId: cm[product.category] } }));
   }
+  await ensureCategorySampleProducts(db, cm);
+  await ensurePopularBrandProducts();
   for (const [index, product] of ps.slice(0, 3).entries()) await db.review.create({ data: { productId: product.id, name: ["Minh Anh", "Quốc Bảo", "Thu Hà"][index], rating: 5, content: "Sản phẩm đúng mô tả, đóng gói cẩn thận và cửa hàng tư vấn nhiệt tình." } });
   const articles = [
     ["man-hinh-gaming", "Chọn màn hình gaming phù hợp cấu hình", "Hướng dẫn", "Cân đối kích thước, độ phân giải và tần số quét theo PC của bạn.", "Full HD phù hợp màn 24 inch, còn QHD thường cân bằng tốt ở 27 inch. Hãy chọn tần số quét theo hiệu năng card đồ họa và tựa game thường chơi."],

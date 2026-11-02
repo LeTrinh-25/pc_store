@@ -9,7 +9,21 @@ export async function PUT(req: Request, { params }: { params: { res: string; id:
   const body = await req.json().catch(() => null); if (!body || typeof body !== "object") return err("Dữ liệu không hợp lệ");
   try {
     if (params.res === "products") { const price = Number(body.price); const stock = Number(body.stock); const categoryId = Number(body.categoryId); const oldPrice = body.oldPrice === "" || body.oldPrice == null ? null : Number(body.oldPrice); if (typeof body.name !== "string" || !body.name.trim() || !Number.isSafeInteger(price) || price < 0 || (oldPrice !== null && (!Number.isSafeInteger(oldPrice) || oldPrice < 0)) || !Number.isSafeInteger(stock) || stock < 0 || !Number.isInteger(categoryId) || categoryId < 1) return err("Vui lòng kiểm tra tên, giá, giá gốc, tồn kho và danh mục"); const data = clean({ ...body, oldPrice, brand: String(body.brand || "").trim(), warranty: String(body.warranty || "Đang cập nhật"), origin: String(body.origin || "Đang cập nhật"), price, stock, categoryId }); return Response.json(await prisma.product.update({ where: { id }, data })); }
-    if (params.res === "categories") { const name = String(body.name || "").trim(); if (!name) return err("Tên danh mục không được để trống"); return Response.json(await prisma.category.update({ where: { id }, data: { name, slug: slugify(name) } })); }
+    if (params.res === "categories") {
+      const name = String(body.name || "").trim();
+      const parentId = body.parentId == null || body.parentId === "" ? null : Number(body.parentId);
+      if (!name) return err("Tên danh mục không được để trống");
+      if (parentId !== null) {
+        if (!Number.isInteger(parentId) || parentId < 1) return err("Danh mục cha không hợp lệ");
+        let parent = await prisma.category.findUnique({ where: { id: parentId }, select: { id: true, parentId: true } });
+        if (!parent) return err("Danh mục cha không tồn tại");
+        while (parent) {
+          if (parent.id === id) return err("Không thể chọn chính danh mục này hoặc danh mục con làm danh mục cha");
+          parent = parent.parentId === null ? null : await prisma.category.findUnique({ where: { id: parent.parentId }, select: { id: true, parentId: true } });
+        }
+      }
+      return Response.json(await prisma.category.update({ where: { id }, data: { name, slug: slugify(name), parentId } }));
+    }
     if (params.res === "orders") {
       if (typeof body.status !== "string") return err("Trạng thái không hợp lệ");
       const result = await prisma.$transaction(async (tx) => {
@@ -29,7 +43,7 @@ export async function DELETE(_: Request, { params }: { params: { res: string; id
   const id = Number(params.id); if (!Number.isInteger(id) || id < 1) return err("ID không hợp lệ");
   try {
     if (params.res === "products") await prisma.product.delete({ where: { id } });
-    else if (params.res === "categories") { const category = await prisma.category.findUnique({ where: { id }, select: { _count: { select: { products: true } } } }); if (!category) return err("Không tìm thấy danh mục", 404); if (category._count.products) return err("Danh mục đang có sản phẩm, hãy chuyển sản phẩm sang danh mục khác trước", 409); await prisma.category.delete({ where: { id } }); }
+    else if (params.res === "categories") { const category = await prisma.category.findUnique({ where: { id }, select: { _count: { select: { products: true, children: true } } } }); if (!category) return err("Không tìm thấy danh mục", 404); if (category._count.products) return err("Danh mục đang có sản phẩm, hãy chuyển sản phẩm sang danh mục khác trước", 409); if (category._count.children) return err("Danh mục đang có danh mục con, hãy chuyển hoặc xóa danh mục con trước", 409); await prisma.category.delete({ where: { id } }); }
     else return err("Không tìm thấy", 404);
     return Response.json({ ok: true });
   } catch { return err("Không thể xóa vì bản ghi đang được sử dụng", 409); }

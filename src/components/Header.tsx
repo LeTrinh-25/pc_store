@@ -2,17 +2,18 @@
 import ProductImage from "@/components/ProductImage";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "./Cart";
 import { mockProducts } from "@/lib/mock-catalog";
 import { vnd } from "@/lib/utils";
 
-export default function Header() {
+type CategoryNavItem = { id: number; name: string };
+
+export default function Header({ categories }: { categories: CategoryNavItem[] }) {
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [megaOpen, setMegaOpen] = useState(false);
   const [q, setQ] = useState("");
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const path = usePathname();
   const router = useRouter();
   const { count, items, total } = useCart();
@@ -22,11 +23,18 @@ export default function Header() {
     fetch("/api/auth/me").then((response) => response.json()).then((data) => setUser(data.user)).catch(() => setUser(null));
     setOpen(false);
   }, [path]);
-  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+  useEffect(() => {
+    const syncActiveCategory = () => {
+      const categoryId = Number(new URLSearchParams(window.location.search).get("category"));
+      setActiveCategoryId(Number.isInteger(categoryId) && categoryId > 0 ? categoryId : null);
+    };
+    syncActiveCategory();
+    window.addEventListener("popstate", syncActiveCategory);
+    return () => window.removeEventListener("popstate", syncActiveCategory);
+  }, [path]);
   const search = (event: React.FormEvent) => { event.preventDefault(); router.push(`/products?q=${encodeURIComponent(q)}`); setOpen(false); };
   const logout = async () => { await fetch("/api/auth/logout", { method: "POST" }); setUser(null); router.push("/"); router.refresh(); };
   const brands = ["Intel", "AMD", "NVIDIA", "ASUS", "MSI", "Corsair", "Kingston", "Samsung", "WD"];
-  const categories = ["PC Gaming", "CPU", "Card đồ họa", "RAM", "SSD", "Mainboard"];
 
   return <>
     <header className="sticky top-0 z-40 bg-white text-gray-900 shadow-sm">
@@ -40,9 +48,7 @@ export default function Header() {
         </form>
         <nav className="ml-auto hidden items-center gap-4 text-sm md:flex">
           <Link href="/news" className="hover:text-blue-700">Tin công nghệ</Link>
-          <Link href="/orders" className="hover:text-blue-700">Đơn hàng</Link>
-          {user?.role === "ADMIN" && <Link href="/admin" className="font-semibold text-blue-700">Quản trị</Link>}
-          {user ? <button onClick={logout} className="max-w-28 truncate text-gray-600 hover:text-blue-700" title="Đăng xuất">{user.name} · Thoát</button> : <Link href="/login" className="hover:text-blue-700">Đăng nhập</Link>}
+          <Link href="/about" className="hover:text-blue-700">Về PCSTORE</Link>
         </nav>
         <div className="group relative ml-auto md:ml-0">
           <Link href="/cart" aria-label={`Giỏ hàng, ${count} sản phẩm`} className="relative block rounded-lg p-2 text-xl hover:bg-blue-50">🛒{count > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-orange-500 px-1.5 text-xs text-white">{count}</span>}</Link>
@@ -53,14 +59,14 @@ export default function Header() {
         </div>
         <button className="rounded-lg p-2 text-2xl md:hidden" onClick={() => setOpen(!open)} aria-label={open ? "Đóng menu" : "Mở menu"} aria-expanded={open}>☰</button>
       </div>
-      <div className="hidden border-t border-gray-100 md:block"><div className="mx-auto flex h-11 max-w-6xl items-center gap-7 px-4 text-sm font-medium">
-        <div className="relative h-full" onMouseEnter={() => { if (closeTimer.current) clearTimeout(closeTimer.current); setMegaOpen(true); }} onMouseLeave={() => { closeTimer.current = setTimeout(() => setMegaOpen(false), 180); }}><button onClick={() => setMegaOpen(!megaOpen)} className="h-full font-semibold text-blue-800" aria-expanded={megaOpen}>☷ Danh mục sản phẩm⌄</button>
-          {megaOpen && <div className="absolute left-0 top-full z-50 grid w-[560px] grid-cols-2 gap-6 rounded-b-2xl border border-gray-200 bg-white p-6 shadow-xl"><div><p className="mb-3 font-bold text-blue-700">Danh mục</p>{categories.map((name) => <Link key={name} href={`/products?q=${encodeURIComponent(name)}`} className="block rounded-lg px-2 py-2 hover:bg-blue-50 hover:text-blue-700">{name}</Link>)}</div><div><p className="mb-3 font-bold text-blue-700">Thương hiệu</p><div className="grid grid-cols-2 gap-2">{brands.map((brand) => <Link key={brand} href={`/products?q=${brand}`} className="rounded-lg border border-gray-100 px-3 py-2 font-semibold hover:border-blue-200 hover:bg-blue-50">{brand}</Link>)}</div></div></div>}
-        </div>
-        <Link href="/products" className="hover:text-blue-700">Tất cả sản phẩm</Link><Link href="/products?promotion=1" className="text-rose-600 hover:text-rose-800">Khuyến mãi</Link><Link href="/about" className="hover:text-blue-700">Về PCSTORE</Link><Link href={user ? "/orders" : "/register"} className="ml-auto hover:text-blue-700">{user ? "Tài khoản của tôi" : "Tạo tài khoản"}</Link>
+      <div className="hidden border-t border-gray-100 md:block"><div className="mx-auto flex h-11 max-w-6xl items-center gap-5 overflow-x-auto whitespace-nowrap px-4 text-sm font-medium [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Link href="/" className={`shrink-0 hover:text-blue-700 ${path === "/" ? "font-bold text-blue-700" : ""}`}>Trang chủ</Link>
+        <Link href="/products" className="shrink-0 hover:text-blue-700">Tất cả sản phẩm</Link>
+        {categories.map((category) => <Link key={category.id} href={`/products?category=${category.id}`} className={`shrink-0 hover:text-blue-700 ${activeCategoryId === category.id ? "font-bold text-blue-700" : ""}`} onClick={() => setActiveCategoryId(category.id)}>{category.name}</Link>)}
+        <Link href="/products?promotion=1" className="ml-auto shrink-0 text-rose-600 hover:text-rose-800">Khuyến mãi</Link>
       </div></div>
-      {open && <div className="border-t border-gray-200 bg-white px-4 py-4 shadow-lg md:hidden"><form onSubmit={search} className="flex"><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" className="inp rounded-r-none"/><button className="rounded-r-lg bg-blue-600 px-4 font-semibold text-white">Tìm</button></form><div className="mt-3 grid grid-cols-2 gap-2">{[...categories, ...brands.slice(0, 4)].map((item) => <Link key={item} href={`/products?q=${encodeURIComponent(item)}`} onClick={() => setOpen(false)} className="rounded-lg bg-gray-50 p-2 text-sm">{item}</Link>)}</div><div className="mt-3 flex gap-4 text-sm"><Link href={user ? "/orders" : "/login"}>{user ? "Đơn hàng của tôi" : "Đăng nhập"}</Link>{user?.role === "ADMIN" && <Link href="/admin">Quản trị</Link>}{user && <button onClick={logout}>Đăng xuất</button>}</div></div>}
+      {open && <div className="border-t border-gray-200 bg-white px-4 py-4 shadow-lg md:hidden"><form onSubmit={search} className="flex"><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" className="inp rounded-r-none"/><button className="rounded-r-lg bg-blue-600 px-4 font-semibold text-white">Tìm</button></form><div className="mt-3 grid grid-cols-2 gap-2">{categories.map((category) => <Link key={category.id} href={`/products?category=${category.id}`} onClick={() => { setOpen(false); setActiveCategoryId(category.id); }} className={`rounded-lg bg-gray-50 p-2 text-sm ${activeCategoryId === category.id ? "font-bold text-blue-700" : ""}`}>{category.name}</Link>)}</div><div className="mt-3 flex gap-4 text-sm"><Link href="/about" onClick={()=>setOpen(false)}>Về PCSTORE</Link>{user?.role === "ADMIN" && <Link href="/admin">Quản trị</Link>}{user && <button onClick={logout}>Đăng xuất</button>}</div></div>}
     </header>
-    <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] text-[11px] shadow-[0_-4px_18px_rgba(15,23,42,.08)] backdrop-blur md:hidden">{[["⌂", "Trang chủ", "/"], ["☷", "Danh mục", "/products"], ["🛒", `Giỏ hàng${count ? ` (${count})` : ""}`, "/cart"], ["♙", "Tài khoản", user ? "/orders" : "/login"]].map(([icon, label, href]) => <Link key={label} href={href} className={`flex min-h-14 flex-col items-center justify-center gap-0.5 ${path === href ? "font-bold text-blue-700" : "text-gray-600"}`}><span className="text-lg leading-5">{icon}</span><span>{label}</span></Link>)}</nav>
+    <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] text-[11px] shadow-[0_-4px_18px_rgba(15,23,42,.08)] backdrop-blur md:hidden">{[["⌂", "Trang chủ", "/"], ["☷", "Danh mục", "/products"], ["🛒", `Giỏ hàng${count ? ` (${count})` : ""}`, "/cart"], ["⌕", "Về PCSTORE", "/about"]].map(([icon, label, href]) => <Link key={label} href={href} className={`flex min-h-14 flex-col items-center justify-center gap-0.5 ${path === href ? "font-bold text-blue-700" : "text-gray-600"}`}><span className="text-lg leading-5">{icon}</span><span>{label}</span></Link>)}</nav>
   </>;
 }

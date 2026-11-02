@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" fill="none">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="960" y2="540" gradientUnits="userSpaceOnUse"><stop stop-color="#e0f2fe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient></defs>
+  <path fill="url(#bg)" d="M0 0h960v540H0z"/>
+  <circle cx="766" cy="96" r="170" fill="#fff" opacity=".5"/>
+  <path d="M0 420h960v120H0z" fill="#dbeafe"/>
+  <rect x="346" y="99" width="390" height="250" rx="20" fill="#172554"/>
+  <rect x="362" y="115" width="358" height="218" rx="10" fill="#f8fafc"/>
+  <path d="M532 349v52m-86 0h172" stroke="#475569" stroke-width="16" stroke-linecap="round"/>
+  <path d="M396 285c48-72 96-36 142-88 42-48 94-30 143-75" stroke="#2563eb" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="396" cy="285" r="12" fill="#f97316"/><circle cx="538" cy="197" r="12" fill="#f97316"/><circle cx="681" cy="122" r="12" fill="#f97316"/>
+  <rect x="154" y="282" width="136" height="112" rx="15" fill="#fff" stroke="#94a3b8" stroke-width="6"/>
+  <path d="M180 316h82m-82 28h82m-82 28h54" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M744 396h132" stroke="#64748b" stroke-width="12" stroke-linecap="round"/>
+  <path d="M804 396v-80m-32 80 32-80 32 80" stroke="#16a34a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

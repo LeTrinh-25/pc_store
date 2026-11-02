@@ -36,7 +36,7 @@ export default function ProductCard({ p }: { p: CardProduct }) {
       </Link>
       <div className="flex flex-1 flex-col gap-1 p-3 sm:p-4">
         <span className="text-[11px] font-bold uppercase tracking-wide text-blue-600">{p.category}</span>
-        <Link href={productHref} className="line-clamp-2 min-h-10 font-semibold leading-snug hover:text-blue-600">{p.name}</Link>
+        <Link href={productHref} aria-label={p.name} className="block min-h-10 text-sm font-semibold leading-5 text-gray-900 hover:text-blue-600">{p.name}</Link>
         <ProductRatingInline productId={p.id} productName={p.name} />
         <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-2">
           <span className="text-base font-extrabold text-rose-600 sm:text-lg">{vnd(p.price)}</span>
